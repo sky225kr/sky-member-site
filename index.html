@@ -661,10 +661,6 @@ body.cloud-locked .content{visibility:hidden}
   async function loadCloud(){
     const {data,error}=await client.from('members').select('*').order('created_at',{ascending:false});
     if(error) throw error;
-    if(data.length===0){
-      const initial=[...tbody.querySelectorAll('tr')].map(memberFromRow).filter(m=>m.member_id);
-      if(initial.length){ const {error:seedError}=await client.from('members').upsert(initial,{onConflict:'member_id'}); if(seedError) throw seedError; return loadCloud(); }
-    }
     renderCloud(data);
   }
   async function syncCloud(){
@@ -679,7 +675,16 @@ body.cloud-locked .content{visibility:hidden}
       email:document.getElementById('authEmail').value.trim(),
       password:document.getElementById('authPassword').value
     });
-    message.textContent=error ? '이메일 또는 비밀번호가 올바르지 않습니다.' : '';
+    if(error){
+      message.textContent='이메일 또는 비밀번호가 올바르지 않습니다.';
+      return;
+    }
+    try{
+      await loadCloud();
+    }catch(e){
+      openAuth();
+      message.textContent='회원 정보를 불러오지 못했습니다. 다시 로그인해 주세요.';
+    }
   });
   tbody.addEventListener('click',e=>{
     if(e.target.closest('.delete-btn')){
