@@ -65,13 +65,13 @@ tbody tr{transition:.15s}tbody tr:hover{background:#f8fbff}.name{color:#1e293b;f
 <div class="logo">sky<span>-member</span></div>
 <div class="menu-title">MAIN MENU</div>
 <ul class="menu">
-<li><a href="#"><span class="menu-icon">⌂</span><span>대시보드</span></a></li>
-<li><a href="#" class="active"><span class="menu-icon">♙</span><span>회원 관리</span></a></li>
-<li><a href="#"><span class="menu-icon">▣</span><span>그룹 관리</span></a></li>
-<li><a href="#"><span class="menu-icon">▥</span><span>통계</span></a></li>
+<li><a href="#" data-view="dashboard"><span class="menu-icon">⌂</span><span>대시보드</span></a></li>
+<li><a href="#" class="active" data-view="members"><span class="menu-icon">♙</span><span>회원 관리</span></a></li>
+<li><a href="#" data-view="groups"><span class="menu-icon">▣</span><span>그룹 관리</span></a></li>
+<li><a href="#" data-view="stats"><span class="menu-icon">▥</span><span>통계</span></a></li>
 <div class="menu-title">SYSTEM</div>
-<li><a href="#"><span class="menu-icon">▤</span><span>공지사항</span></a></li>
-<li><a href="#"><span class="menu-icon">⚙</span><span>환경설정</span></a></li>
+<li><a href="#" data-view="notices"><span class="menu-icon">▤</span><span>공지사항</span></a></li>
+<li><a href="#" data-view="settings"><span class="menu-icon">⚙</span><span>환경설정</span></a></li>
 </ul>
 <div class="sidebar-bottom">
     <div>sky-member Admin</div>
@@ -86,7 +86,7 @@ tbody tr{transition:.15s}tbody tr:hover{background:#f8fbff}.name{color:#1e293b;f
 <div class="header-left">회원관리 시스템</div>
 <div class="header-right">
 <div class="notification">🔔<span class="notification-dot"></span></div>
-<div class="admin"><div class="admin-avatar">관</div><div class="admin-info"><div class="admin-name">관리자</div><div class="admin-role">Administrator</div></div></div>
+<div class="admin"><div class="admin-avatar">관</div><div class="admin-info"><div class="admin-name">관리자</div><div class="admin-role">Administrator</div></div></div><button class="action-btn" id="logoutBtn" type="button">로그아웃</button>
 </div>
 </header>
 <section class="content">
@@ -97,15 +97,15 @@ tbody tr{transition:.15s}tbody tr:hover{background:#f8fbff}.name{color:#1e293b;f
 <div class="search-box">
 <div class="search-title">회원 검색</div>
 <div class="search-row">
-<select><option>이름</option><option>아이디</option><option>연락처</option><option>이메일</option></select>
-<select><option>전체 그룹</option><option>일반 그룹</option><option>VIP 그룹</option></select>
-<select><option>전체 상태</option><option>활성</option><option>비활성</option></select>
-<input type="text" placeholder="검색어를 입력하세요">
-<button class="search-btn">🔍 검색</button>
+<select id="searchField"><option>이름</option><option>아이디</option><option>연락처</option><option>이메일</option></select>
+<select id="groupFilter"><option>전체 그룹</option><option>일반회원</option><option>우수회원</option></select>
+<select id="statusFilter"><option>전체 상태</option><option>활성</option><option>비활성</option></select>
+<input id="searchKeyword" type="text" placeholder="검색어를 입력하세요">
+<button class="search-btn" id="searchBtn" type="button">🔍 검색</button>
 </div>
 </div>
 <div class="table-card">
-<div class="table-header"><div class="table-header-title">회원 목록 <span class="member-count">(10명 표시 / 전체 1,284명)</span></div><button class="action-btn">엑셀 다운로드</button></div>
+<div class="table-header"><div class="table-header-title">회원 목록 <span class="member-count">(10명 표시 / 전체 1,284명)</span></div><button class="action-btn" id="downloadBtn" type="button">엑셀 다운로드</button></div>
 <div class="table-wrap">
 <table>
 <thead><tr><th>No.</th><th>이름</th><th>아이디</th><th>전화번호</th><th>이메일</th><th>관리</th></tr></thead>
@@ -641,6 +641,7 @@ body.cloud-locked .content{visibility:hidden}
   const authForm=document.getElementById('authForm');
   const message=document.getElementById('authMessage');
   let cloudReady=false;
+  window.memberAdmin={logout:async()=>{ await client.auth.signOut(); location.reload(); }};
 
   function openAuth(){ document.body.classList.add('cloud-locked'); overlay.classList.add('open'); overlay.setAttribute('aria-hidden','false'); }
   function closeAuth(){ document.body.classList.remove('cloud-locked'); overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true'); }
@@ -695,6 +696,37 @@ body.cloud-locked .content{visibility:hidden}
   document.getElementById('registerForm').addEventListener('submit',()=>setTimeout(syncCloud,0));
   client.auth.getSession().then(async({data:{session}})=>{ if(!session) return openAuth(); try{ await loadCloud(); }catch(e){ openAuth(); message.textContent='관리자 계정으로 로그인해 주세요.'; } });
   client.auth.onAuthStateChange((_event,session)=>{ if(session) setTimeout(()=>loadCloud().catch(()=>openAuth()),0); });
+})();
+</script>
+<style>
+.tool-view{display:none}.tool-view.open{display:block}.tool-card{background:#fff;border:1px solid #e7ebf2;border-radius:10px;padding:24px}.tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.tool-stat{padding:18px;border-radius:10px;background:#f8fafc}.tool-stat strong{display:block;font-size:26px;color:#2563eb;margin-top:7px}@media(max-width:700px){.tool-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+  const content=document.querySelector('.content'), tableCard=document.querySelector('.table-card'), searchBox=document.querySelector('.search-box'), pageHeader=document.querySelector('.page-header');
+  const title=pageHeader.querySelector('h1'), subtitle=pageHeader.querySelector('p'), register=document.getElementById('openRegisterBtn');
+  const extra=document.createElement('section'); extra.className='tool-view'; content.appendChild(extra);
+  const rows=()=>[...document.querySelectorAll('table tbody tr')];
+  const memberCount=()=>rows().length;
+  function showMembers(){ extra.classList.remove('open'); tableCard.style.display=''; searchBox.style.display=''; register.style.display=''; title.textContent='회원 관리'; subtitle.textContent='등록된 회원 정보를 조회하고 관리할 수 있습니다.'; }
+  function showView(view){
+    if(view==='members') return showMembers();
+    const total=memberCount(), active=rows().filter(r=>r.dataset.status!=='비활성').length, vip=rows().filter(r=>r.dataset.grade==='우수회원').length;
+    tableCard.style.display='none'; searchBox.style.display='none'; register.style.display='none'; extra.classList.add('open');
+    const views={
+      dashboard:['대시보드','회원 현황을 한눈에 확인하세요.',`<div class="tool-grid"><div class="tool-stat">전체 회원<strong>${total}명</strong></div><div class="tool-stat">활성 회원<strong>${active}명</strong></div><div class="tool-stat">우수회원<strong>${vip}명</strong></div></div>`],
+      groups:['그룹 관리','등급별 회원 현황입니다.',`<div class="tool-grid"><div class="tool-stat">일반회원<strong>${Math.max(0,total-vip)}명</strong></div><div class="tool-stat">우수회원<strong>${vip}명</strong></div></div>`],
+      stats:['통계','현재 등록된 회원 데이터를 기준으로 집계합니다.',`<div class="tool-card">전체 ${total}명 중 활성 회원은 ${active}명입니다.</div>`],
+      notices:['공지사항','관리자 공지사항을 확인합니다.',`<div class="tool-card">등록된 공지사항이 없습니다.</div>`],
+      settings:['환경설정','관리자 화면 설정입니다.',`<div class="tool-card">회원 데이터는 Supabase DB에 안전하게 저장되고 있습니다.</div>`]
+    };
+    const v=views[view]; title.textContent=v[0]; subtitle.textContent=v[1]; extra.innerHTML=v[2];
+  }
+  document.querySelectorAll('[data-view]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('active'));a.classList.add('active');showView(a.dataset.view)}));
+  function applySearch(){ const field=document.getElementById('searchField').value, q=document.getElementById('searchKeyword').value.trim().toLowerCase(), group=document.getElementById('groupFilter').value, status=document.getElementById('statusFilter').value; const idx={이름:1,아이디:2,연락처:3,이메일:4}[field]; rows().forEach(r=>{const cells=r.cells;const ok=(!q||cells[idx].textContent.toLowerCase().includes(q))&&(group==='전체 그룹'||r.dataset.grade===group)&&(status==='전체 상태'||r.dataset.status===status);r.style.display=ok?'':'none'});}
+  document.getElementById('searchBtn').addEventListener('click',applySearch); document.getElementById('searchKeyword').addEventListener('keydown',e=>{if(e.key==='Enter')applySearch()});
+  document.getElementById('downloadBtn').addEventListener('click',()=>{const lines=['번호,이름,아이디,전화번호,이메일',...rows().filter(r=>r.style.display!=='none').map(r=>[...r.cells].slice(0,5).map(c=>'"'+c.textContent.trim().replaceAll('"','""')+'"').join(','))];const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv'}));a.download='회원목록.csv';a.click();URL.revokeObjectURL(a.href)});
+  document.getElementById('logoutBtn').addEventListener('click',async()=>{if(window.memberAdmin) await window.memberAdmin.logout()});
 })();
 </script>
 </body>
