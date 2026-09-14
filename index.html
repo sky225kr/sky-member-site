@@ -610,5 +610,84 @@ tbody tr{transition:.15s}tbody tr:hover{background:#f8fbff}.name{color:#1e293b;f
 })();
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body.cloud-locked .content{visibility:hidden}
+.sm-auth-modal{width:min(410px,100%);text-align:center;padding:34px 30px 30px}
+.sm-auth-icon{width:58px;height:58px;margin:0 auto 16px;border-radius:50%;background:#e8f0ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:25px}
+.sm-auth-modal h2{margin:0;color:#172033;font-size:20px}.sm-auth-modal p{margin:9px 0 20px;color:#64748b;font-size:14px;line-height:1.55}
+.sm-auth-modal input{box-sizing:border-box;width:100%;height:42px;border:1px solid #dbe1ea;border-radius:7px;padding:0 11px;font-size:14px;margin-bottom:10px}
+.sm-auth-modal button{width:100%;height:42px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+.sm-auth-message{min-height:20px;margin-top:12px;font-size:13px;color:#2563eb}
+</style>
+<div class="sm-overlay" id="authOverlay" aria-hidden="true">
+  <div class="sm-modal sm-auth-modal">
+    <div class="sm-auth-icon">🔒</div>
+    <h2>관리자 로그인</h2>
+    <p>회원 정보는 관리자만 관리할 수 있습니다.<br>이메일로 로그인 링크를 보내드립니다.</p>
+    <form id="authForm"><input id="authEmail" type="email" required placeholder="관리자 이메일"><button type="submit">로그인 링크 받기</button></form>
+    <div class="sm-auth-message" id="authMessage"></div>
+  </div>
+</div>
+<script>
+/* Supabase DB 동기화: 공개 키는 RLS 정책과 함께 브라우저에서 안전하게 사용됩니다. */
+(function(){
+  const client=window.supabase.createClient(
+    'https://nxwnxvvizwiqidezawnq.supabase.co',
+    'sb_publishable_Xqz9aLQfGklweZFnnnInJg_G1y3TGST'
+  );
+  const tbody=document.querySelector('table tbody');
+  const overlay=document.getElementById('authOverlay');
+  const authForm=document.getElementById('authForm');
+  const message=document.getElementById('authMessage');
+  let cloudReady=false;
+
+  function openAuth(){ document.body.classList.add('cloud-locked'); overlay.classList.add('open'); overlay.setAttribute('aria-hidden','false'); }
+  function closeAuth(){ document.body.classList.remove('cloud-locked'); overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true'); }
+  function memberFromRow(row){
+    const c=row.querySelectorAll('td');
+    return {name:c[1]?.textContent.trim()||'',member_id:c[2]?.textContent.trim()||'',phone:c[3]?.textContent.trim()||'',email:c[4]?.textContent.trim()||'',join_date:row.dataset.joinDate||new Date().toISOString().slice(0,10),grade:row.dataset.grade||'일반회원',status:row.dataset.status||'활성'};
+  }
+  function renderCloud(rows){
+    const local=rows.map(m=>({name:m.name,id:m.member_id,phone:m.phone,email:m.email,joinDate:m.join_date,grade:m.grade,status:m.status}));
+    const saved=localStorage.getItem('sky-member-members-v2');
+    if(saved!==JSON.stringify(local)){
+      localStorage.setItem('sky-member-members-v2',JSON.stringify(local));
+      location.reload();
+      return;
+    }
+    cloudReady=true; closeAuth();
+  }
+  async function loadCloud(){
+    const {data,error}=await client.from('members').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    if(data.length===0){
+      const initial=[...tbody.querySelectorAll('tr')].map(memberFromRow).filter(m=>m.member_id);
+      if(initial.length){ const {error:seedError}=await client.from('members').upsert(initial,{onConflict:'member_id'}); if(seedError) throw seedError; return loadCloud(); }
+    }
+    renderCloud(data);
+  }
+  async function syncCloud(){
+    if(!cloudReady) return;
+    const members=[...tbody.querySelectorAll('tr')].map(memberFromRow).filter(m=>m.member_id);
+    const {error}=await client.from('members').upsert(members,{onConflict:'member_id'});
+    if(error) console.error(error);
+  }
+  authForm.addEventListener('submit',async e=>{
+    e.preventDefault(); message.textContent='로그인 링크를 보내는 중입니다…';
+    const {error}=await client.auth.signInWithOtp({email:document.getElementById('authEmail').value.trim(),options:{emailRedirectTo:location.href}});
+    message.textContent=error ? '로그인 링크 전송에 실패했습니다.' : '이메일을 확인해 로그인 링크를 열어주세요.';
+  });
+  tbody.addEventListener('click',e=>{
+    if(e.target.closest('.delete-btn')){
+      const row=e.target.closest('tr'); const memberId=row?.querySelector('.id')?.textContent.trim();
+      setTimeout(async()=>{ if(cloudReady && memberId && ![...tbody.querySelectorAll('.id')].some(el=>el.textContent.trim()===memberId)) await client.from('members').delete().eq('member_id',memberId); },0);
+    } else if(e.target.closest('.edit-btn')) setTimeout(syncCloud,0);
+  });
+  document.getElementById('registerForm').addEventListener('submit',()=>setTimeout(syncCloud,0));
+  client.auth.getSession().then(async({data:{session}})=>{ if(!session) return openAuth(); try{ await loadCloud(); }catch(e){ openAuth(); message.textContent='관리자 계정으로 로그인해 주세요.'; } });
+  client.auth.onAuthStateChange((_event,session)=>{ if(session) setTimeout(()=>loadCloud().catch(()=>openAuth()),0); });
+})();
+</script>
 </body>
 </html>
