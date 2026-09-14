@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sky-member 회원관리</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Malgun Gothic","Noto Sans KR",sans-serif;background:#f5f7fb;color:#1e293b}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;background:#172033;color:#94a3b8;flex-shrink:0;display:flex;flex-direction:column}
+.logo{height:72px;padding:0 25px;display:flex;align-items:center;color:#fff;font-size:21px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.07)}
+.logo span{color:#4f8cff;margin-left:3px}
+.menu-title{padding:25px 25px 10px;font-size:11px;color:#64748b;letter-spacing:1px}
+.menu{list-style:none}.menu li{margin:3px 12px}
+.menu a{display:flex;align-items:center;gap:13px;padding:13px 14px;color:#94a3b8;text-decoration:none;font-size:14px;border-radius:8px;transition:.2s}
+.menu a:hover{background:#202c42;color:#fff}.menu a.active{background:#2563eb;color:#fff;box-shadow:0 5px 15px rgba(37,99,235,.25)}
+.menu-icon{width:20px;text-align:center;font-size:16px}
+.sidebar-bottom{margin-top:auto;padding:20px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b}
+.main{flex:1;min-width:0}.header{height:72px;background:#fff;border-bottom:1px solid #e5eaf1;display:flex;align-items:center;justify-content:space-between;padding:0 30px}
+.header-left{font-size:15px;font-weight:600;color:#334155}.header-right{display:flex;align-items:center;gap:22px}
+.notification{position:relative;font-size:19px;cursor:pointer}.notification-dot{position:absolute;width:7px;height:7px;background:#ef4444;border-radius:50%;top:-2px;right:-3px;border:2px solid white}
+.admin{display:flex;align-items:center;gap:10px}.admin-avatar{width:36px;height:36px;border-radius:50%;background:#2563eb;color:white;display:flex;justify-content:center;align-items:center;font-size:14px;font-weight:bold}
+.admin-info{line-height:1.4}.admin-name{font-size:13px;font-weight:600}.admin-role{font-size:11px;color:#94a3b8}
+.content{padding:30px;max-width:1600px;margin:auto}.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.page-title h1{font-size:25px;color:#172033;margin-bottom:6px}.page-title p{font-size:13px;color:#94a3b8}
+.primary-btn{border:0;background:#2563eb;color:#fff;padding:11px 17px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 10px rgba(37,99,235,.2);transition:.2s}
+.primary-btn:hover{background:#1d4ed8;transform:translateY(-1px)}
+.search-box{background:#fff;border:1px solid #e7ebf2;border-radius:10px;padding:20px;margin-bottom:20px}
+.search-title{font-size:14px;font-weight:700;margin-bottom:15px}.search-row{display:flex;gap:9px}
+.search-row select,.search-row input{height:40px;border:1px solid #dbe1ea;border-radius:6px;background:#fff;padding:0 12px;font-size:13px;color:#334155;outline:none}
+.search-row select:focus,.search-row input:focus{border-color:#3b82f6}.search-row select{width:130px}.search-row input{flex:1}
+.search-btn{height:40px;padding:0 22px;border:0;border-radius:6px;background:#334155;color:#fff;font-size:13px;cursor:pointer}.search-btn:hover{background:#1e293b}
+.table-card{background:#fff;border:1px solid #e7ebf2;border-radius:10px;overflow:hidden}.table-header{height:60px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf0f5}
+.table-header-title{font-size:14px;font-weight:700}.member-count{color:#2563eb}.table-wrap{overflow-x:auto}
+table{width:100%;min-width:900px;border-collapse:collapse}thead{background:#f8fafc}
+th{height:46px;padding:0 15px;font-size:12px;font-weight:600;color:#64748b;text-align:left;white-space:nowrap}
+td{height:62px;padding:0 15px;border-top:1px solid #edf0f5;font-size:13px;color:#475569;white-space:nowrap}
+tbody tr{transition:.15s}tbody tr:hover{background:#f8fbff}.name{color:#1e293b;font-weight:600}.id,.email{color:#64748b}.grade{font-weight:600}.grade.vip{color:#d97706}.grade.normal{color:#475569}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%}.badge.active{background:#ecfdf3;color:#15803d}.badge.active::before{background:#22c55e}.badge.inactive{background:#fef2f2;color:#dc2626}.badge.inactive::before{background:#ef4444}
+.action-btn{border:1px solid #dbe1ea;background:#fff;color:#475569;padding:6px 11px;border-radius:5px;font-size:11px;cursor:pointer}.action-btn:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}
+.pagination{display:flex;justify-content:center;gap:5px;padding:22px}.page{width:34px;height:34px;border:1px solid #e2e8f0;background:#fff;border-radius:5px;cursor:pointer;font-size:12px;color:#64748b}.page:hover{border-color:#2563eb;color:#2563eb}.page.active{background:#2563eb;color:#fff;border-color:#2563eb}
+@media(max-width:1000px){.sidebar{width:210px}.content{padding:20px}}
+@media(max-width:700px){.sidebar{width:70px}.logo{justify-content:center;padding:0;font-size:0}.logo span{font-size:20px}.menu-title,.menu a span:not(.menu-icon),.sidebar-bottom{display:none}.menu a{justify-content:center;padding:14px 5px}.header{padding:0 15px}.header-left{display:none}.content{padding:15px}.page-header{align-items:flex-start;gap:15px}.page-title h1{font-size:20px}.search-row{flex-wrap:wrap}.search-row select{width:calc(50% - 5px)}.search-row input{width:100%;flex-basis:100%}.search-btn{width:100%}}
+
+/* 저작권 이메일 링크 */
+.copyright {
+    margin-top: 12px;
+    font-size: 11px;
+}
+.copyright a {
+    color: #64748b;
+    text-decoration: none;
+}
+.copyright a:hover {
+    color: #94a3b8;
+    text-decoration: none;
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo">sky<span>-member</span></div>
+<div class="menu-title">MAIN MENU</div>
+<ul class="menu">
+<li><a href="#"><span class="menu-icon">⌂</span><span>대시보드</span></a></li>
+<li><a href="#" class="active"><span class="menu-icon">♙</span><span>회원 관리</span></a></li>
+<li><a href="#"><span class="menu-icon">▣</span><span>그룹 관리</span></a></li>
+<li><a href="#"><span class="menu-icon">▥</span><span>통계</span></a></li>
+<div class="menu-title">SYSTEM</div>
+<li><a href="#"><span class="menu-icon">▤</span><span>공지사항</span></a></li>
+<li><a href="#"><span class="menu-icon">⚙</span><span>환경설정</span></a></li>
+</ul>
+<div class="sidebar-bottom">
+    <div>sky-member Admin</div>
+    <div>v1.0.0</div>
+    <div class="copyright">
+        <a href="#" id="copyrightEmail" aria-label="이메일 문의">by sungkook.yoon</a>
+    </div>
+</div>
+</aside>
+<main class="main">
+<header class="header">
+<div class="header-left">회원관리 시스템</div>
+<div class="header-right">
+<div class="notification">🔔<span class="notification-dot"></span></div>
+<div class="admin"><div class="admin-avatar">관</div><div class="admin-info"><div class="admin-name">관리자</div><div class="admin-role">Administrator</div></div></div>
+</div>
+</header>
+<section class="content">
+<div class="page-header">
+<div class="page-title"><h1>회원 관리</h1><p>등록된 회원 정보를 조회하고 관리할 수 있습니다.</p></div>
+<button class="primary-btn" id="openRegisterBtn">＋ 신규 회원 등록</button>
+</div>
+<div class="search-box">
+<div class="search-title">회원 검색</div>
+<div class="search-row">
+<select><option>이름</option><option>아이디</option><option>연락처</option><option>이메일</option></select>
+<select><option>전체 그룹</option><option>일반 그룹</option><option>VIP 그룹</option></select>
+<select><option>전체 상태</option><option>활성</option><option>비활성</option></select>
+<input type="text" placeholder="검색어를 입력하세요">
+<button class="search-btn">🔍 검색</button>
+</div>
+</div>
+<div class="table-card">
+<div class="table-header"><div class="table-header-title">회원 목록 <span class="member-count">(10명 표시 / 전체 1,284명)</span></div><button class="action-btn">엑셀 다운로드</button></div>
+<div class="table-wrap">
+<table>
+<thead><tr><th>No.</th><th>이름</th><th>아이디</th><th>전화번호</th><th>이메일</th><th>관리</th></tr></thead>
+<tbody>
+<tr>
+<td>1</td>
+<td class="name">김지우</td>
+<td class="id">JiwooKim</td>
+<td>010-1234-5678</td>
+<td class="email">jiwoo@email.com</td>
+<td>2024-01-15</td>
+<td class="grade normal">일반회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>2</td>
+<td class="name">박서준</td>
+<td class="id">SeojunPark</td>
+<td>010-8765-4321</td>
+<td class="email">seojun@email.com</td>
+<td>2024-01-14</td>
+<td class="grade vip">우수회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>3</td>
+<td class="name">이민준</td>
+<td class="id">MinjunLee</td>
+<td>010-2222-3333</td>
+<td class="email">minjun@email.com</td>
+<td>2024-01-13</td>
+<td class="grade normal">일반회원</td>
+<td><span class="badge inactive">비활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>4</td>
+<td class="name">최유진</td>
+<td class="id">YujinChoi</td>
+<td>010-4444-5555</td>
+<td class="email">yujin@email.com</td>
+<td>2024-01-12</td>
+<td class="grade vip">우수회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>5</td>
+<td class="name">정현우</td>
+<td class="id">HyunwooJung</td>
+<td>010-5555-6666</td>
+<td class="email">hyunwoo@email.com</td>
+<td>2024-01-11</td>
+<td class="grade normal">일반회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>6</td>
+<td class="name">한서연</td>
+<td class="id">SeoyeonHan</td>
+<td>010-6666-7777</td>
+<td class="email">seoyeon@email.com</td>
+<td>2024-01-10</td>
+<td class="grade normal">일반회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>7</td>
+<td class="name">강민석</td>
+<td class="id">MinseokKang</td>
+<td>010-7777-8888</td>
+<td class="email">minseok@email.com</td>
+<td>2024-01-09</td>
+<td class="grade vip">우수회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>8</td>
+<td class="name">윤지민</td>
+<td class="id">JiminYoon</td>
+<td>010-8888-9999</td>
+<td class="email">jimin@email.com</td>
+<td>2024-01-08</td>
+<td class="grade normal">일반회원</td>
+<td><span class="badge inactive">비활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>9</td>
+<td class="name">오준혁</td>
+<td class="id">JunhyeokOh</td>
+<td>010-9999-0000</td>
+<td class="email">junhyeok@email.com</td>
+<td>2024-01-07</td>
+<td class="grade normal">일반회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+<tr>
+<td>10</td>
+<td class="name">서하늘</td>
+<td class="id">HaneulSeo</td>
+<td>010-1111-2222</td>
+<td class="email">haneul@email.com</td>
+<td>2024-01-06</td>
+<td class="grade vip">우수회원</td>
+<td><span class="badge active">활성</span></td>
+<td><button class="action-btn">수정</button> <button class="action-btn">삭제</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pagination"><button class="page">‹</button><button class="page active">1</button><button class="page">2</button><button class="page">3</button><button class="page">4</button><button class="page">5</button><button class="page">›</button></div>
+</div>
+</section>
+</main>
+</div>
+
+<script>
+/*
+ * 이메일 주소를 HTML 본문에 평문으로 노출하지 않고
+ * 브라우저에서만 조합하여 mailto 링크를 생성합니다.
+ */
+(function () {
+    const user = String.fromCharCode(
+        115,117,110,103,107,111,111,107,46,121,111,111,110
+    );
+    const domain = String.fromCharCode(
+        103,109,97,105,108,46,99,111,109
+    );
+    const link = document.getElementById("copyrightEmail");
+
+    if (link) {
+        link.href = "mailto:" + user + "@" + domain;
+    }
+})();
+</script>
+
+
+<style>
+/* 회원 상세 */
+.sm-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:9998}
+.sm-overlay.open{display:flex}
+.sm-modal{width:min(520px,100%);background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 25px 70px rgba(15,23,42,.25)}
+.sm-head{padding:20px 24px;border-bottom:1px solid #e5eaf1;display:flex;align-items:center;justify-content:space-between}
+.sm-head h2{font-size:20px;color:#172033}
+.sm-close{width:36px;height:36px;border:0;border-radius:8px;background:#f1f5f9;color:#475569;font-size:23px;cursor:pointer}
+.sm-body{padding:24px}
+.sm-profile{display:flex;align-items:center;gap:13px;padding-bottom:18px;border-bottom:1px solid #edf0f5}
+.sm-avatar{width:50px;height:50px;border-radius:14px;background:#e8f0ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+.sm-profile-name{font-weight:700;font-size:17px;color:#172033}.sm-profile-id{font-size:12px;color:#94a3b8;margin-top:3px}
+.sm-info{margin-top:15px}.sm-info-row{display:flex;justify-content:space-between;gap:20px;padding:13px 0;border-bottom:1px solid #edf0f5;font-size:13px}.sm-info-row span{color:#64748b}.sm-info-row strong{color:#1e293b;text-align:right;word-break:break-all}
+
+/* 신규 회원 등록 */
+.sm-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.sm-field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:7px}
+.sm-field input,.sm-field select{width:100%;height:42px;border:1px solid #dbe1ea;border-radius:7px;padding:0 11px;font-size:13px;outline:none;color:#334155}
+.sm-field input:focus,.sm-field select:focus{border-color:#3b82f6}
+.sm-form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}
+.sm-cancel{height:40px;padding:0 18px;border:1px solid #dbe1ea;background:#fff;border-radius:7px;color:#475569;cursor:pointer}
+.sm-submit{height:40px;padding:0 20px;border:0;background:#2563eb;color:#fff;border-radius:7px;font-weight:600;cursor:pointer}
+.sm-complete-modal{width:min(400px,100%);text-align:center;padding:36px 30px 30px}
+.sm-complete-icon{width:58px;height:58px;margin:0 auto 16px;border-radius:50%;background:#e8f7ee;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:29px;font-weight:700}
+.sm-complete-modal h2{margin:0;color:#172033;font-size:20px}.sm-complete-modal p{margin:9px 0 23px;color:#64748b;font-size:14px}
+.sm-complete-btn{width:100%;height:42px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+@media(max-width:560px){.sm-form-grid{grid-template-columns:1fr}}
+</style>
+
+<!-- 회원 상세 -->
+<div class="sm-overlay" id="detailOverlay" aria-hidden="true">
+  <div class="sm-modal">
+    <div class="sm-head"><h2>회원 상세정보</h2><button class="sm-close" id="detailClose" type="button">×</button></div>
+    <div class="sm-body">
+      <div class="sm-profile"><div class="sm-avatar" id="detailAvatar">김</div><div><div class="sm-profile-name" id="detailName">-</div><div class="sm-profile-id" id="detailId">-</div></div></div>
+      <div class="sm-info">
+        <div class="sm-info-row"><span>연락처</span><strong id="detailPhone">-</strong></div>
+        <div class="sm-info-row"><span>이메일</span><strong id="detailEmail">-</strong></div>
+        <div class="sm-info-row"><span>가입일</span><strong id="detailJoin">-</strong></div>
+        <div class="sm-info-row"><span>등급</span><strong id="detailGrade">-</strong></div>
+        <div class="sm-info-row"><span>상태</span><strong id="detailStatus">-</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 신규 회원 등록 -->
+<div class="sm-overlay" id="registerOverlay" aria-hidden="true">
+  <div class="sm-modal">
+    <div class="sm-head"><h2>신규 회원 등록</h2><button class="sm-close" id="registerClose" type="button">×</button></div>
+    <form class="sm-body" id="registerForm">
+      <div class="sm-form-grid">
+        <div class="sm-field"><label>이름 *</label><input id="regName" required placeholder="이름을 입력하세요"></div>
+        <div class="sm-field"><label>아이디 *</label><input id="regId" required placeholder="아이디를 입력하세요"></div>
+        <div class="sm-field"><label>연락처 *</label><input id="regPhone" required placeholder="010-0000-0000"></div>
+        <div class="sm-field"><label>이메일 *</label><input id="regEmail" type="email" required placeholder="email@example.com"></div>
+        <div class="sm-field"><label>등급</label><select id="regGrade"><option>일반회원</option><option>우수회원</option></select></div>
+        <div class="sm-field"><label>상태</label><select id="regStatus"><option>활성</option><option>비활성</option></select></div>
+      </div>
+      <div class="sm-form-actions"><button class="sm-cancel" id="registerCancel" type="button">취소</button><button class="sm-submit" type="submit">등록하기</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- 가입 완료 -->
+<div class="sm-overlay" id="completeOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="completeTitle">
+  <div class="sm-modal sm-complete-modal">
+    <div class="sm-complete-icon" aria-hidden="true">✓</div>
+    <h2 id="completeTitle">가입이 완료되었습니다</h2>
+    <p>새 회원이 목록 맨 앞에 등록되었습니다.</p>
+    <button class="sm-complete-btn" id="completeConfirm" type="button">확인</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const tbody = document.querySelector('table tbody');
+  const table = document.querySelector('table');
+  const detail = document.getElementById('detailOverlay');
+  const register = document.getElementById('registerOverlay');
+  const complete = document.getElementById('completeOverlay');
+  const openRegister = document.getElementById('openRegisterBtn');
+  const form = document.getElementById('registerForm');
+  const STORAGE_KEY = 'sky-member-members-v2';
+  let editingRow = null;
+
+  function openLayer(el){ el.classList.add('open'); el.setAttribute('aria-hidden','false'); }
+  function closeLayer(el){ el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+
+  function esc(v){
+    const d=document.createElement('div');
+    d.textContent=v ?? '';
+    return d.innerHTML;
+  }
+
+  function today(){
+    const d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function rowToMember(row){
+    const c=row.querySelectorAll('td');
+    return {
+      name: c[1]?.textContent.trim() || '',
+      id: c[2]?.textContent.trim() || '',
+      phone: c[3]?.textContent.trim() || '',
+      email: c[4]?.textContent.trim() || '',
+      joinDate: row.dataset.joinDate || '',
+      grade: row.dataset.grade || '일반회원',
+      status: row.dataset.status || '활성'
+    };
+  }
+
+  function saveMembers(){
+    const members=[...tbody.querySelectorAll('tr')].map(rowToMember);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+  }
+
+  function getMembers(){
+    try{
+      const raw=localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function normalizeInitialRows(){
+    // 이전 버전의 9열 표에서 가입일/등급/상태를 데이터 속성으로 옮깁니다.
+    [...tbody.querySelectorAll('tr')].forEach(row=>{
+      const c=row.querySelectorAll('td');
+      if(c.length >= 9){
+        row.dataset.joinDate = c[5].textContent.trim();
+        row.dataset.grade = c[6].textContent.trim();
+        row.dataset.status = c[7].textContent.trim();
+        const name=c[1].textContent.trim();
+        const id=c[2].textContent.trim();
+        const phone=c[3].textContent.trim();
+        const email=c[4].textContent.trim();
+        const no=c[0].textContent.trim();
+        row.innerHTML =
+          '<td>'+esc(no)+'</td>'+
+          '<td class="name">'+esc(name)+'</td>'+
+          '<td class="id">'+esc(id)+'</td>'+
+          '<td>'+esc(phone)+'</td>'+
+          '<td class="email">'+esc(email)+'</td>'+
+          '<td><button class="action-btn edit-btn" type="button">수정</button> <button class="action-btn delete-btn" type="button">삭제</button></td>';
+      }else{
+        const c=row.querySelectorAll('td');
+        if(c.length>=6 && !row.dataset.joinDate) row.dataset.joinDate=today();
+        if(c.length>=6 && !row.dataset.grade) row.dataset.grade='일반회원';
+        if(c.length>=6 && !row.dataset.status) row.dataset.status='활성';
+        if(c.length>=6){
+          const actions=c[5];
+          if(!actions.querySelector('.edit-btn')){
+            actions.innerHTML='<button class="action-btn edit-btn" type="button">수정</button> <button class="action-btn delete-btn" type="button">삭제</button>';
+          }
+        }
+      }
+    });
+  }
+
+  function renderMembers(members){
+    tbody.innerHTML='';
+    members.forEach((m,idx)=>{
+      const tr=document.createElement('tr');
+      tr.dataset.joinDate=m.joinDate || today();
+      tr.dataset.grade=m.grade || '일반회원';
+      tr.dataset.status=m.status || '활성';
+      tr.innerHTML =
+        '<td>'+ (idx+1) +'</td>'+
+        '<td class="name">'+esc(m.name)+'</td>'+
+        '<td class="id">'+esc(m.id)+'</td>'+
+        '<td>'+esc(m.phone)+'</td>'+
+        '<td class="email">'+esc(m.email)+'</td>'+
+        '<td><button class="action-btn edit-btn" type="button">수정</button> <button class="action-btn delete-btn" type="button">삭제</button></td>';
+      tbody.appendChild(tr);
+    });
+    updateCount();
+  }
+
+  function updateCount(){
+    const count=tbody.querySelectorAll('tr').length;
+    const candidates=document.querySelectorAll('*');
+    candidates.forEach(el=>{
+      if(el.children.length===0 && /명 표시/.test(el.textContent)){
+        el.textContent = '('+count+'명 표시 / 전체 '+count+'명)';
+      }
+    });
+  }
+
+  function showDetail(row){
+    const m=rowToMember(row);
+    document.getElementById('detailAvatar').textContent=m.name.charAt(0) || '?';
+    document.getElementById('detailName').textContent=m.name;
+    document.getElementById('detailId').textContent=m.id;
+    document.getElementById('detailPhone').textContent=m.phone;
+    document.getElementById('detailEmail').textContent=m.email;
+    document.getElementById('detailJoin').textContent=m.joinDate || '-';
+    document.getElementById('detailGrade').textContent=m.grade || '-';
+    document.getElementById('detailStatus').textContent=m.status || '-';
+    openLayer(detail);
+  }
+
+  function startEdit(row){
+    const m=rowToMember(row);
+    editingRow=row;
+    document.getElementById('regName').value=m.name;
+    document.getElementById('regId').value=m.id;
+    document.getElementById('regPhone').value=m.phone;
+    document.getElementById('regEmail').value=m.email;
+    document.getElementById('regGrade').value=m.grade;
+    document.getElementById('regStatus').value=m.status;
+    register.querySelector('.sm-head h2').textContent='회원 정보 수정';
+    form.querySelector('.sm-submit').textContent='수정 저장';
+    openLayer(register);
+  }
+
+  function startNew(){
+    editingRow=null;
+    form.reset();
+    register.querySelector('.sm-head h2').textContent='신규 회원 등록';
+    form.querySelector('.sm-submit').textContent='등록하기';
+    openLayer(register);
+  }
+
+  function bindRow(row){
+    if(row.dataset.bound==='1') return;
+    row.dataset.bound='1';
+
+    row.addEventListener('click',function(e){
+      const edit=e.target.closest('.edit-btn');
+      const del=e.target.closest('.delete-btn');
+
+      if(edit){
+        e.stopPropagation();
+        startEdit(row);
+        return;
+      }
+
+      if(del){
+        e.stopPropagation();
+        const m=rowToMember(row);
+        if(confirm('「'+m.name+'」 회원을 삭제하시겠습니까?')){
+          row.remove();
+          [...tbody.querySelectorAll('tr')].forEach((r,i)=>r.cells[0].textContent=i+1);
+          saveMembers();
+          updateCount();
+        }
+        return;
+      }
+
+      showDetail(row);
+    });
+  }
+
+  // 최초 실행: 기존 HTML의 회원을 보존하고, 이후에는 localStorage 데이터를 사용합니다.
+  normalizeInitialRows();
+
+  const saved=getMembers();
+  if(saved && Array.isArray(saved)){
+    renderMembers(saved);
+  }else{
+    [...tbody.querySelectorAll('tr')].forEach(bindRow);
+    saveMembers();
+    updateCount();
+  }
+
+  [...tbody.querySelectorAll('tr')].forEach(bindRow);
+
+  openRegister.addEventListener('click', startNew);
+  document.getElementById('detailClose').addEventListener('click',()=>closeLayer(detail));
+  document.getElementById('registerClose').addEventListener('click',()=>closeLayer(register));
+  document.getElementById('registerCancel').addEventListener('click',()=>closeLayer(register));
+  document.getElementById('completeConfirm').addEventListener('click',()=>closeLayer(complete));
+
+  [detail,register,complete].forEach(el=>{
+    el.addEventListener('click',e=>{
+      if(e.target===el) closeLayer(el);
+    });
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      closeLayer(detail);
+      closeLayer(register);
+      closeLayer(complete);
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    const isNewMember = !editingRow;
+
+    const name=document.getElementById('regName').value.trim();
+    const id=document.getElementById('regId').value.trim();
+    const phone=document.getElementById('regPhone').value.trim();
+    const email=document.getElementById('regEmail').value.trim();
+    const grade=document.getElementById('regGrade').value;
+    const status=document.getElementById('regStatus').value;
+
+    // 아이디 중복 방지
+    const duplicate=[...tbody.querySelectorAll('tr')].some(row=>{
+      if(editingRow===row) return false;
+      return row.querySelectorAll('td')[2]?.textContent.trim().toLowerCase() === id.toLowerCase();
+    });
+    if(duplicate){
+      alert('이미 사용 중인 아이디입니다.');
+      return;
+    }
+
+    if(editingRow){
+      const oldJoin=editingRow.dataset.joinDate || today();
+      editingRow.dataset.joinDate=oldJoin;
+      editingRow.dataset.grade=grade;
+      editingRow.dataset.status=status;
+
+      editingRow.cells[1].textContent=name;
+      editingRow.cells[2].textContent=id;
+      editingRow.cells[3].textContent=phone;
+      editingRow.cells[4].textContent=email;
+
+      bindRow(editingRow);
+    }else{
+      const tr=document.createElement('tr');
+      tr.dataset.joinDate=today();
+      tr.dataset.grade=grade;
+      tr.dataset.status=status;
+
+      tr.innerHTML =
+        '<td></td>'+
+        '<td class="name">'+esc(name)+'</td>'+
+        '<td class="id">'+esc(id)+'</td>'+
+        '<td>'+esc(phone)+'</td>'+
+        '<td class="email">'+esc(email)+'</td>'+
+        '<td><button class="action-btn edit-btn" type="button">수정</button> <button class="action-btn delete-btn" type="button">삭제</button></td>';
+
+      // 새 회원은 항상 목록의 첫 번째 행에 표시합니다.
+      tbody.prepend(tr);
+      bindRow(tr);
+    }
+
+    [...tbody.querySelectorAll('tr')].forEach((r,i)=>r.cells[0].textContent=i+1);
+    saveMembers();
+    updateCount();
+
+    closeLayer(register);
+    form.reset();
+    editingRow=null;
+    register.querySelector('.sm-head h2').textContent='신규 회원 등록';
+    form.querySelector('.sm-submit').textContent='등록하기';
+
+    // 수정 저장일 때는 완료 팝업을 띄우지 않고, 신규 가입일 때만 안내합니다.
+    if(isNewMember){
+      openLayer(complete);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
